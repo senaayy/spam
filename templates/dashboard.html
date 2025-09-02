@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spam Detector Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); min-height: 100vh; color: #333; }
+        .navbar { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); padding: 1rem 2rem; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
+        .navbar-brand { font-size: 1.5rem; font-weight: 800; color: #4f46e5; text-decoration: none; }
+        .navbar-user { display: flex; align-items: center; gap: 1rem; }
+        .user-info { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: rgba(79, 70, 229, 0.1); border-radius: 25px; }
+        .logout-btn { padding: 0.5rem 1rem; background: #ef4444; color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: all 0.3s ease; }
+        .logout-btn:hover { background: #dc2626; transform: translateY(-1px); }
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; margin-bottom: 2rem; }
+        .card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-radius: 20px; padding: 2rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15); }
+        .card-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+        .card-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+        .card-title { font-size: 1.25rem; font-weight: 700; color: #1f2937; }
+        .train-card .card-icon { background: linear-gradient(135deg, #10b981, #059669); }
+        .analyze-card .card-icon { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .stats-card .card-icon { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: #374151; font-weight: 600; }
+        .form-group textarea { width: 100%; min-height: 120px; padding: 1rem; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 1rem; resize: vertical; transition: all 0.3s ease; font-family: inherit; }
+        .form-group textarea:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        .btn { padding: 0.875rem 2rem; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; justify-content: center; }
+        .btn:disabled { opacity: 0.7; cursor: not-allowed; }
+        .btn-primary { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3); }
+        .btn-success { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+        .btn-success:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3); }
+        .loading-spinner { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 1s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .result-card { margin-top: 1.5rem; padding: 1.5rem; border-radius: 12px; display: none; }
+        .result-spam { background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1)); border: 2px solid #f87171; }
+        .result-normal { background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1)); border: 2px solid #34d399; }
+        .result-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+        .result-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
+        .result-spam .result-icon { background: #ef4444; color: white; }
+        .result-normal .result-icon { background: #10b981; color: white; }
+        .progress-bar { width: 100%; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; margin: 0.5rem 0; }
+        .progress-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+        .progress-spam { background: linear-gradient(90deg, #ef4444, #dc2626); }
+        .progress-normal { background: linear-gradient(90deg, #10b981, #059669); }
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem; }
+        .stat-item { text-align: center; padding: 1rem; background: rgba(79, 70, 229, 0.1); border-radius: 12px; }
+        .stat-value { font-size: 1.5rem; font-weight: 800; color: #4f46e5; }
+        .stat-label { font-size: 0.875rem; color: #6b7280; margin-top: 0.25rem; }
+        .alert { padding: 1rem; border-radius: 12px; margin: 1rem 0; display: none; }
+        .alert-success { background: rgba(16, 185, 129, 0.1); border: 1px solid #34d399; color: #065f46; }
+        .alert-error { background: rgba(239, 68, 68, 0.1); border: 1px solid #f87171; color: #991b1b; }
+        .model-status { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border-radius: 25px; font-size: 0.875rem; font-weight: 600; }
+        .model-status.ready { background: rgba(16, 185, 129, 0.1); color: #065f46; }
+        .model-status.not-ready { background: rgba(239, 68, 68, 0.1); color: #991b1b; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status-dot.ready { background: #10b981; }
+        .status-dot.not-ready { background: #ef4444; }
+        @media (max-width: 768px) { .dashboard-grid { grid-template-columns: 1fr; } .navbar { flex-direction: column; gap: 1rem; } .stats-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">🛡️ Spam Detector</a>
+        <div class="navbar-user">
+            <div class="user-info">
+                <span>👤 {{ username }}</span>
+            </div>
+            <div class="model-status" id="modelStatus">
+                <div class="status-dot"></div>
+                <span>Model durumu kontrol ediliyor...</span>
+            </div>
+            <a href="/logout" class="logout-btn">Çıkış</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="dashboard-grid">
+            <div class="card train-card">
+                <div class="card-header">
+                    <div class="card-icon">🧠</div>
+                    <div class="card-title">Model Eğitimi</div>
+                </div>
+                <p>Spam tespit modelini eğitin. Bu işlem birkaç saniye sürecektir.</p>
+                <button class="btn btn-success" id="trainBtn" style="margin-top: 1rem; width: 100%;">
+                    <span id="trainSpinner" class="loading-spinner" style="display: none;"></span>
+                    <span id="trainText">Modeli Eğit</span>
+                </button>
+                <div class="alert alert-success" id="trainSuccess">
+                    <strong>✅ Başarılı!</strong> Model eğitimi tamamlandı.
+                    <div class="stats-grid" id="trainStats" style="margin-top: 1rem;"></div>
+                </div>
+                <div class="alert alert-error" id="trainError"></div>
+            </div>
+
+            <div class="card analyze-card">
+                <div class="card-header">
+                    <div class="card-icon">🔍</div>
+                    <div class="card-title">E-posta Analizi</div>
+                </div>
+                <form id="analyzeForm">
+                    <div class="form-group">
+                        <label for="emailText">E-posta Metni</label>
+                        <textarea id="emailText" name="emailText" placeholder="Analiz etmek istediğiniz e-posta metnini buraya yapıştırın..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="analyzeBtn" style="width: 100%;">
+                        <span id="analyzeSpinner" class="loading-spinner" style="display: none;"></span>
+                        <span id="analyzeText">Analiz Et</span>
+                    </button>
+                </form>
+                <div class="result-card" id="resultCard">
+                    <div class="result-header">
+                        <div class="result-icon" id="resultIcon"></div>
+                        <div>
+                            <h3 id="resultTitle"></h3>
+                            <p id="resultDescription"></p>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>SPAM Olasılığı</span>
+                            <span id="spamPercent"></span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill progress-spam" id="spamProgress"></div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>NORMAL Olasılığı</span>
+                            <span id="normalPercent"></span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill progress-normal" id="normalProgress"></div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1rem; text-align: center;">
+                        <div class="stat-item">
+                            <div class="stat-value" id="confidenceValue"></div>
+                            <div class="stat-label">Güven Skoru</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-error" id="analyzeError"></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">⚡</div>
+                <div class="card-title">Hızlı Test Örnekleri</div>
+            </div>
+            <p style="margin-bottom: 1rem;">Aşağıdaki örnek metinlerle sistemi hızlıca test edebilirsiniz:</p>
+            <div style="display: grid; gap: 1rem;">
+                <button class="btn" style="background: #fef3c7; color: #92400e; border: 2px dashed #fbbf24;" onclick="setTestEmail('ÖNEMLİ!!! Hemen tıkla 1000$ kazan!!! BEDAVA iPHONE kazan! Şimdi tıkla!')">📧 SPAM Örneği Test Et</button>
+                <button class="btn" style="background: #d1fae5; color: #065f46; border: 2px dashed #34d399;" onclick="setTestEmail('Yarınki toplantı saat 14:00\'da konferans salonunda. Lütfen zamanında gelin.')">📧 NORMAL Örneği Test Et</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function checkModelStatus() {
+            try {
+                const response = await fetch('/test');
+                if (!response.ok) {
+                    const txt = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${txt.slice(0,200)}`);
+                }
+                const ct = response.headers.get('content-type') || '';
+                if (!ct.includes('application/json')) {
+                    const txt = await response.text();
+                    throw new Error(`JSON olmayan cevap: ${txt.slice(0,200)}`);
+                }
+                const result = await response.json();
+                const statusEl = document.getElementById('modelStatus');
+                if (result.success) {
+                    statusEl.className = 'model-status ready';
+                    statusEl.innerHTML = '<div class="status-dot ready"></div><span>Model hazır</span>';
+                } else {
+                    statusEl.className = 'model-status not-ready';
+                    statusEl.innerHTML = '<div class="status-dot not-ready"></div><span>Model hazır değil</span>';
+                }
+            } catch (error) {
+                const statusEl = document.getElementById('modelStatus');
+                statusEl.className = 'model-status not-ready';
+                statusEl.innerHTML = '<div class="status-dot not-ready"></div><span>API bağlantı hatası</span>';
+            }
+        }
+        document.getElementById('trainBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('trainBtn');
+            const spinner = document.getElementById('trainSpinner');
+            const text = document.getElementById('trainText');
+            const successAlert = document.getElementById('trainSuccess');
+            const errorAlert = document.getElementById('trainError');
+            const statsDiv = document.getElementById('trainStats');
+            btn.disabled = true; spinner.style.display = 'inline-block'; text.textContent = 'Model eğitiliyor...'; successAlert.style.display = 'none'; errorAlert.style.display = 'none';
+            try {
+                const response = await fetch('/train', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                if (!response.ok) {
+                    const txt = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${txt.slice(0,200)}`);
+                }
+                const ct = response.headers.get('content-type') || '';
+                if (!ct.includes('application/json')) {
+                    const txt = await response.text();
+                    throw new Error(`JSON olmayan cevap: ${txt.slice(0,200)}`);
+                }
+                const result = await response.json();
+                if (result.success) {
+                    successAlert.style.display = 'block';
+                    const accuracy = (result.results.accuracy * 100).toFixed(1);
+                    statsDiv.innerHTML = `<div class="stat-item"><div class="stat-value">${accuracy}%</div><div class="stat-label">Doğruluk</div></div><div class="stat-item"><div class="stat-value">100+</div><div class="stat-label">Eğitim Verisi</div></div>`;
+                    checkModelStatus();
+                } else { throw new Error(result.error); }
+            } catch (error) { errorAlert.style.display = 'block'; errorAlert.textContent = `❌ Hata: ${error.message}`; }
+            finally { btn.disabled = false; spinner.style.display = 'none'; text.textContent = 'Modeli Eğit'; }
+        });
+        document.getElementById('analyzeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const emailText = document.getElementById('emailText').value.trim();
+            const btn = document.getElementById('analyzeBtn');
+            const spinner = document.getElementById('analyzeSpinner');
+            const text = document.getElementById('analyzeText');
+            const resultCard = document.getElementById('resultCard');
+            const errorAlert = document.getElementById('analyzeError');
+            if (!emailText) { errorAlert.style.display = 'block'; errorAlert.textContent = '❌ Lütfen analiz edilecek e-posta metnini girin.'; return; }
+            btn.disabled = true; spinner.style.display = 'inline-block'; text.textContent = 'Analiz ediliyor...'; resultCard.style.display = 'none'; errorAlert.style.display = 'none';
+            try {
+                const response = await fetch('/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email_text: emailText }) });
+                if (!response.ok) {
+                    const txt = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${txt.slice(0,200)}`);
+                }
+                const ct = response.headers.get('content-type') || '';
+                if (!ct.includes('application/json')) {
+                    const txt = await response.text();
+                    throw new Error(`JSON olmayan cevap: ${txt.slice(0,200)}`);
+                }
+                const result = await response.json();
+                if (result.success) { showResult(result); }
+                else { throw new Error(result.error); }
+            } catch (error) { errorAlert.style.display = 'block'; errorAlert.textContent = `❌ Hata: ${error.message}`; }
+            finally { btn.disabled = false; spinner.style.display = 'none'; text.textContent = 'Analiz Et'; }
+        });
+        function showResult(result) {
+            const resultCard = document.getElementById('resultCard');
+            const resultIcon = document.getElementById('resultIcon');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultDescription = document.getElementById('resultDescription');
+            const spamPercent = document.getElementById('spamPercent');
+            const normalPercent = document.getElementById('normalPercent');
+            const spamProgress = document.getElementById('spamProgress');
+            const normalProgress = document.getElementById('normalProgress');
+            const confidenceValue = document.getElementById('confidenceValue');
+            const isSpam = result.prediction === 'SPAM';
+            resultCard.className = `result-card ${isSpam ? 'result-spam' : 'result-normal'}`; resultCard.style.display = 'block';
+            resultIcon.textContent = isSpam ? '🚨' : '✅';
+            resultTitle.textContent = result.prediction;
+            resultDescription.textContent = isSpam ? 'Bu e-posta spam olarak sınıflandırıldı' : 'Bu e-posta normal olarak sınıflandırıldı';
+            spamPercent.textContent = `${result.spam_probability}%`;
+            normalPercent.textContent = `${result.normal_probability}%`;
+            confidenceValue.textContent = `${result.confidence}%`;
+            setTimeout(() => { spamProgress.style.width = `${result.spam_probability}%`; normalProgress.style.width = `${result.normal_probability}%`; }, 100);
+        }
+        function setTestEmail(text) { document.getElementById('emailText').value = text; document.getElementById('emailText').focus(); }
+        checkModelStatus();
+    </script>
+</body>
+</html>

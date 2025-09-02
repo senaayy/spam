@@ -1,0 +1,24 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+# Virtual environments
+.venv/
+.venv312/
+env/
+venv/
+# Model artifacts
+models/spam_model.pkl
+models/tfidf_vectorizer.pkl
+models/*.joblib
+# Logs
+server.log
+# OS
+.DS_Store
+# Python build
+build/
+dist/
+*.egg-info/
+# IDE
+.vscode/
+.idea/
